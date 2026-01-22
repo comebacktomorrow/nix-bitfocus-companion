@@ -27,7 +27,7 @@
 in
   stdenv.mkDerivation rec {
     pname = "bitfocus-companion";
-    version = "4.1.4";
+    version = "4.2.3";
 
     strictDeps = true;
 
@@ -35,7 +35,7 @@ in
       owner = "bitfocus";
       repo = "companion";
       tag = "v${version}";
-      hash = "sha256-4l28vgMo/hy8lgMd69MLxBmI41sgNGDYnKUZafZDT5k=";
+      hash = "sha256-JTbC9LT7mGYWMLyq6TRrTc4JQmqzoOpun1IzJ7+RBMY=";
     };
 
     passthru.updateScript = nix-update-script {};
