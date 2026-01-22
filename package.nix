@@ -46,15 +46,16 @@ in
 
       # remove the yarn install during the build, since there is no internet connection, and everything has already been installed by yarnBerryConfigHook
       substituteInPlace tools/build/dist.mts \
-        --replace-fail 'await $`yarn --cwd node_modules/better-sqlite3 prebuild-install --arch=''${platformInfo.nodeArch}`' "" \
-        --replace-fail 'await $`yarn workspace @companion-app/launcher-ui build`' ""
+        --replace-fail 'await $`yarn --cwd node_modules/better-sqlite3 prebuild-install --arch=''${platformInfo.nodeArch} --platform=''${platformInfo.nodePlatform}`' "" \
+        --replace-fail 'await $`yarn workspace @companion-app/launcher-ui build`' "" \
+        --replace-fail 'await $`yarn --cwd node_modules/better-sqlite3 prebuild-install`' ""
 
       substituteInPlace tools/build/package.mts --replace-fail "await $\`yarn install --no-immutable\`" ""
 
       # remove node download, since we'll use the nix version
       substituteInPlace tools/build/package.mts \
         --replace-fail "const nodeVersions = await fetchNodejs(platformInfo)" "const nodeVersions = []" \
-        --replace-fail "await fs.createSymlink(latestRuntimeDir, path.join(runtimesDir, 'main'))" ""
+        --replace-fail "await fs.createSymlink(latestRuntimeDir, path.join(runtimesDir, 'main'), 'dir')" ""
 
       substituteInPlace companion/lib/Instance/NodePath.ts \
         --replace-fail "if (!(await fs.pathExists(nodePath))) return null" "return '${lib.getExe nodejs}'" \
@@ -80,7 +81,7 @@ in
 
     offlineCache = yarn-berry.fetchYarnBerryDeps {
       inherit src missingHashes;
-      hash = "sha256-bOqUIizc6WClJUWhYVekqbru+FrHmDAMVpbrpVTkgeU=";
+      hash = "sha256-pMSob56ZCdSPHJnulDQNPfHv+bGOXe+ZM4l5P8gWZjI=";
     };
 
     env = {
