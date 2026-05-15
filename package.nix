@@ -58,8 +58,7 @@ in
       substituteInPlace tools/build/package.mts \
         --replace-fail "const nodeVersions = await fetchNodejs(platformInfo)" "const nodeVersions: [string, string][] = []" \
         --replace-fail "await fs.createSymlink(latestRuntimeDir, path.join(runtimesDir, 'main'), 'dir')" "" \
-        --replace-fail "const builtinSurfaceCacheDir = await fetchBuiltinSurfaceModules()" "const builtinSurfaceCacheDir = 'dist/builtin-surfaces/'" \
-        --replace-fail "await fs.copy(builtinSurfaceCacheDir, builtinSurfacesDir)" ""
+        --replace-fail "const builtinSurfaceCacheDir = await fetchBuiltinSurfaceModules()" "const builtinSurfaceCacheDir = await (async () => { try { return await fetchBuiltinSurfaceModules() } catch { return 'dist/builtin-surfaces/' } })()"
 
       # Disable strict mode in the tools TypeScript project to allow the Nix build to succeed
       substituteInPlace tsconfig.tools.json \
@@ -76,12 +75,24 @@ in
 
     preBuild = ''
       # Fix the ELF interpreter of the bundled dart binary so it can run in the Nix sandbox.
-      # sass-embedded ships dart-sass 1.98.x which supports the modern if() sass syntax;
-      # nixpkgs dart-sass is 1.94.x (too old), so we use the bundled binary instead.
-      # ${stdenv.cc.bintools.dynamicLinker} expands to the path of the dynamic linker (ld.so) — use it directly.
-      patchelf \
-        --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" \
-        node_modules/sass-embedded-linux-arm64/dart-sass/src/dart
+      # sass-embedded ships an architecture-specific binary under node_modules.
+      dart_bin=""
+      for p in \
+        node_modules/sass-embedded-linux-arm64/dart-sass/src/dart \
+        node_modules/sass-embedded-linux-x64/dart-sass/src/dart \
+        node_modules/sass-embedded-linux-ia32/dart-sass/src/dart
+      do
+        if [[ -f "$p" ]]; then
+          dart_bin="$p"
+          break
+        fi
+      done
+
+      if [[ -n "$dart_bin" ]]; then
+        patchelf --set-interpreter "${stdenv.cc.bintools.dynamicLinker}" "$dart_bin"
+      else
+        echo "warning: sass-embedded dart binary not found; skipping patchelf"
+      fi
     '';
 
     nativeBuildInputs = [
