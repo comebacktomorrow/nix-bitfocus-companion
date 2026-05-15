@@ -58,7 +58,8 @@ in
       substituteInPlace tools/build/package.mts \
         --replace-fail "const nodeVersions = await fetchNodejs(platformInfo)" "const nodeVersions: [string, string][] = []" \
         --replace-fail "await fs.createSymlink(latestRuntimeDir, path.join(runtimesDir, 'main'), 'dir')" "" \
-        --replace-fail "const builtinSurfaceCacheDir = await fetchBuiltinSurfaceModules()" "const builtinSurfaceCacheDir = await (async () => { try { return await fetchBuiltinSurfaceModules() } catch { return 'dist/builtin-surfaces/' } })()"
+        --replace-fail "const builtinSurfaceCacheDir = await fetchBuiltinSurfaceModules()" "const builtinSurfaceCacheDir = await (async () => { try { return await fetchBuiltinSurfaceModules() } catch { return null } })()" \
+        --replace-fail "await fs.copy(builtinSurfaceCacheDir, builtinSurfacesDir)" "if (builtinSurfaceCacheDir) await fs.copy(builtinSurfaceCacheDir, builtinSurfacesDir)"
 
       # Disable strict mode in the tools TypeScript project to allow the Nix build to succeed
       substituteInPlace tsconfig.tools.json \
