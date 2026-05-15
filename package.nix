@@ -158,7 +158,7 @@ in
       # Upstream docker includes iputils at runtime
       makeWrapper ${lib.getExe nodejs} $out/bin/bitfocus-companion \
         --add-flags $out/share/bitfocus-companion/dist/main.js \
-        --set LD_LIBRARY_PATH "${lib.makeLibraryPath [libusb1 udev]}" \
+        --set LD_LIBRARY_PATH "${lib.makeLibraryPath [libusb1 udev stdenv.cc.cc.lib]}" \
         --set NODE_PATH $out/share/bitfocus-companion/node_modules \
         --suffix PATH : "${lib.makeBinPath [iputils procps nettools]}"
 
