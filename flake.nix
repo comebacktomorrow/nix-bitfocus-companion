@@ -7,18 +7,16 @@
   } @ inputs: let
     supportedSystems =
       nixpkgs.lib.attrsets.getAttrs [
-        "aarch64-darwin"
         "aarch64-linux"
-        "x86_64-darwin"
         "x86_64-linux"
       ]
       nixpkgs.legacyPackages;
   in {
     overlays.default = (
       final: prev: {
-        # TODO: prev or final here? nixpkgs manual says use prev for fns?
-        # "flakes arn't real" uses final...
-        companion = prev.callPackage ./package.nix {};
+        # Use final so downstream overlays can influence attrs seen by companion.
+        # Use prev for yarn-berry_4 to avoid potential infinite recursion on that attr.
+        companion = final.callPackage ./package.nix {};
         yarn-berry-fetcher-with-retries = final.yarn-berry_4.yarn-berry-fetcher.overrideAttrs (old: {
           patches = [./yarn-berry-fetcher_retries.patch];
         });
@@ -34,8 +32,8 @@
     packages =
       builtins.mapAttrs (
         system: pkgs: let
-          # https://jade.fyi/blog/flakes-arent-real/
-          overlayPkgs = self.overlays.default pkgs pkgs;
+          # pkgs.extend applies the overlay with correct final/prev semantics.
+          overlayPkgs = pkgs.extend self.overlays.default;
         in {
           inherit (overlayPkgs) yarn-berry-fetcher-with-retries companion;
           default = overlayPkgs.companion;
@@ -93,6 +91,7 @@
               fsType = "tmpfs";
               options = ["defaults" "mode=755"];
             };
+            # WARNING: test credentials — never use this configuration in production.
             users.users.root.initialPassword = "password";
             users.users.test = {
               isNormalUser = true;
@@ -101,7 +100,7 @@
             };
             programs.companion.enable = true;
             services.openssh.enable = true;
-            services.openssh.settings.PermitRootLogin = "yes";
+            services.openssh.settings.PermitRootLogin = "yes"; # test VM only
             networking.firewall.allowedTCPPorts = [22];
           }
         ];

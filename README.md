@@ -4,13 +4,13 @@ A NixOS flake for [Bitfocus Companion](https://bitfocus.io/companion).
 
 ## Quick Start
 ```bash
-nix run github:noblepayne/bitfocus-companion-flake
+nix run github:comebacktomorrow/nix-bitfocus-companion
 ```
 
 Or add to your NixOS configuration:
 ```nix
 {
-  inputs.companion.url = "github:noblepayne/bitfocus-companion-flake";
+  inputs.companion.url = "github:comebacktomorrow/nix-bitfocus-companion";
   
   outputs = { self, nixpkgs, companion, ... }: {
     nixosConfigurations.myhost = nixpkgs.lib.nixosSystem {

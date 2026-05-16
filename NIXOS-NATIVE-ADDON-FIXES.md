@@ -160,10 +160,27 @@ systemd.services.bitfocus-companion = {
 
 ## Additional: DynamicUser is incompatible
 
-Using `DynamicUser = true` compounds Fix 3: the state directory is placed under
-`/var/lib/private/companion/` with an idmapped `noexec` bind mount, and the
-unpredictable UID makes file ownership management harder. Use a static system
-user instead:
+`DynamicUser = true` is incompatible with Companion for two distinct reasons:
+
+**1. `noexec` on the state directory (compounds Fix 3)**
+With `DynamicUser=`, systemd places the state directory under
+`/var/lib/private/companion/` via an idmapped bind mount that carries the same
+`noexec` flag described in Fix 3. This makes the workaround in Fix 3 (using
+`systemd.tmpfiles.rules` instead of `StateDirectory=`) mandatory, not optional.
+
+**2. Hardware access requires a stable, named identity**
+USB HID devices (Stream Decks, Mirabox docks, etc.) are granted to a user or
+group via `udev` rules — for example `GROUP="plugdev"` or `OWNER="bitfocus-companion"`.
+These rules reference a *name*, which must exist as a real, persistent user or
+group. `DynamicUser=` allocates a UID from the 61184–65519 dynamic range and
+holds it stable for the service lifetime, but the allocation is ephemeral: the
+user never appears in `/etc/passwd`, cannot be a member of supplementary groups
+like `plugdev`, and cannot be named in `udev` rules. The issue is not that the
+UID number is unknown ahead of time — it's that the identity is managed
+ephemerally in ways that conflict with the permission-grant mechanisms that
+hardware access depends on.
+
+Use a static system user instead:
 
 ```nix
 users.users.bitfocus-companion = {

@@ -166,7 +166,12 @@ in
       runHook preInstall
 
       mkdir -p $out/share/bitfocus-companion
-      cp -r * $out/share/bitfocus-companion/
+      # Copy only the runtime artifacts; avoid copying build caches or temp dirs.
+      cp -r dist node_modules $out/share/bitfocus-companion/
+      # Some upstream assets (icons, etc.) live at the package root.
+      for f in *.png *.ico *.json; do
+        [ -e "$f" ] && cp "$f" $out/share/bitfocus-companion/ || true
+      done
 
       # Upstream docker includes udev at both build and runtime
       # Upstream docker includes iputils at runtime
