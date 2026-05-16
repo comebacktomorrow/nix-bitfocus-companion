@@ -166,12 +166,13 @@ in
       runHook preInstall
 
       mkdir -p $out/share/bitfocus-companion
-      # Copy only the runtime artifacts; avoid copying build caches or temp dirs.
-      cp -r dist node_modules $out/share/bitfocus-companion/
-      # Some upstream assets (icons, etc.) live at the package root.
-      for f in *.png *.ico *.json; do
-        [ -e "$f" ] && cp "$f" $out/share/bitfocus-companion/ || true
-      done
+      # node_modules/ contains Yarn workspace symlinks to sibling package dirs
+      # (companion/, webui/, docs/, launcher-ui/, shared-lib/, launcher/), so all
+      # root-level directories must be copied together or symlinks will be broken.
+      cp -r * $out/share/bitfocus-companion/
+      # Remove build caches that are not needed at runtime.
+      rm -rf $out/share/bitfocus-companion/.cache \
+             $out/share/bitfocus-companion/node_modules/.cache
 
       # Upstream docker includes udev at both build and runtime
       # Upstream docker includes iputils at runtime
