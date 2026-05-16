@@ -15,9 +15,18 @@
   nettools,
   patchelf,
   makeWrapper,
+  fetchurl,
   nix-update-script,
 }: let
   yarn-berry = yarn-berry_4;
+
+  # elgato-stream-deck is Companion's only builtin surface module.
+  # The build sandbox has no network, so fetchBuiltinSurfaceModules() fails silently
+  # and dist/builtin-surfaces/ ends up empty. Fetch the pinned tarball via fetchurl instead.
+  elgatoStreamDeck = fetchurl {
+    url = "https://s4.bitfocus.io/developer-module-builds/surface/elgato-stream-deck/v1.4.1-e1dafcd207dc1bf4d84fc96773d954323e4cde43/elgato-stream-deck-v1.4.1.tgz";
+    sha256 = "9f9a5481e021068d92b6e6284143b0f41294aed8e806145fb1b79c6c3df5d051";
+  };
 
   selectSystem = attrs:
     attrs.${stdenv.hostPlatform.system} or (throw "Unsupported system: ${stdenv.hostPlatform.system}");
@@ -142,6 +151,11 @@ in
     '';
 
     preInstall = ''
+      # Inject builtin surface modules (fetchBuiltinSurfaceModules() is a no-op in the
+      # sandbox; we use fetchurl above instead and extract here before installPhase copies dist/).
+      mkdir -p dist/builtin-surfaces/elgato-stream-deck
+      tar -xzf ${elgatoStreamDeck} -C dist/builtin-surfaces/elgato-stream-deck --strip-components=1
+
       # remove node runtime, since we will always use the nix node runtime
       rm -rf .cache/node-runtimes
       rm -rf dist/node-runtimes
